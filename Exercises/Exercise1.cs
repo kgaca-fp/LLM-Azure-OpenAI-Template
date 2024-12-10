@@ -20,10 +20,12 @@ namespace LLMAzureOpenAITemplate.Exercises
             var chatHistory = new ChatHistory();
             chatHistory.AddSystemMessage("As senior software developer response to questions.");
             chatHistory.AddUserMessage(prompt!);
+            while (true)
+            {
+                var response = await llmService.GetChatMessageContentsAsync(chatHistory);
 
-            var response = await llmService.GetChatMessageContentsAsync(chatHistory);
-
-            SimpleConsole.WriteLineAsAI($"AI: {response.Last()}");
+                SimpleConsole.WriteLineAsAI($"AI: {response.Last()}");
+            }
         }
     }
 }

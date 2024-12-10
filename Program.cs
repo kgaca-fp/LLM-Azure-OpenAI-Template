@@ -4,6 +4,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Connectors.AzureOpenAI;
+using Microsoft.SemanticKernel.Embeddings;
 
 namespace LLMAzureOpenAITemplate
 {
@@ -22,8 +24,11 @@ namespace LLMAzureOpenAITemplate
             var endpoint = builder.Configuration["openai-endpoint"] ??
                            throw new ArgumentNullException("builder.Configuration[\"openai-endpoint\"]");
 
-            builder.Services.AddAzureOpenAIChatCompletion("gpt-4o", endpoint, apiKey,
-                modelId: "gpt-4o");
+            builder.Services.AddAzureOpenAIChatCompletion("gpt-4o-mini", endpoint, apiKey,
+                modelId: "gpt-4o-mini");
+#pragma warning disable SKEXP0010
+            builder.Services.AddAzureOpenAITextEmbeddingGeneration("text-embedding-ada-002", endpoint, apiKey);
+#pragma warning restore SKEXP0010
 
             builder.Services.AddSingleton<ILLMService, LLMService>();
             builder.Services.AddSingleton<Exercise1>();

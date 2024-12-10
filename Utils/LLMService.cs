@@ -1,17 +1,30 @@
-﻿using Microsoft.Extensions.Hosting;
-using Microsoft.SemanticKernel.ChatCompletion;
+﻿using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel;
 using System.Text.RegularExpressions;
+using Microsoft.SemanticKernel.Embeddings;
 
 namespace LLMAzureOpenAITemplate.Utils;
 
-public class LLMService(IChatCompletionService chatCompletionService) : ILLMService
+#pragma warning disable SKEXP0001
+public class LLMService(IChatCompletionService chatCompletionService, ITextEmbeddingGenerationService embeddingGenerationService) : ILLMService
+#pragma warning restore SKEXP0001
 {
     public async Task<IReadOnlyList<ChatMessageContent>> GetChatMessageContentsAsync(ChatHistory chatHistory)
     {
+        return await TrySend(() => chatCompletionService.GetChatMessageContentsAsync(chatHistory));
+    }
+
+    public async Task<IList<ReadOnlyMemory<float>>> GenerateEmbeddingsAsync(IList<string> messages)
+    {
+        return await TrySend(() => embeddingGenerationService.GenerateEmbeddingsAsync(messages));
+    }
+
+
+    public async Task<T> TrySend<T>(Func<Task<T>> action)
+    {
         try
         {
-            return await chatCompletionService.GetChatMessageContentsAsync(chatHistory);
+            return await action();
         }
         catch (HttpOperationException exception)
         {
@@ -24,7 +37,7 @@ public class LLMService(IChatCompletionService chatCompletionService) : ILLMServ
                 SimpleConsole.WriteErrorLine($"Retrying after {time} seconds");
                 await Task.Delay(time * 1000);
 
-                return await GetChatMessageContentsAsync(chatHistory);
+                return await TrySend(action);
             }
 
             SimpleConsole.WriteErrorLine(exception.Message);
@@ -32,7 +45,7 @@ public class LLMService(IChatCompletionService chatCompletionService) : ILLMServ
             SimpleConsole.WriteErrorLine("Retrying after default time 30 seconds");
             await Task.Delay(30_000);
 
-            return await GetChatMessageContentsAsync(chatHistory);
+            return await TrySend(action);
         }
     }
 }
